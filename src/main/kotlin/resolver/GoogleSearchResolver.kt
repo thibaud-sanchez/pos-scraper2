@@ -84,7 +84,7 @@ class GoogleSearchResolver(val basePath: File, val database: PosDatabase, val re
             do {
                 val urls = mutableListOf<String>()
                 val encodedKeywords = URLEncoder.encode(searchKeywords, "utf-8")
-                val url = "https://www.google.co.uk/search?q=$encodedKeywords&start=$current"
+                val url = "https://www.google.com/search?q=$encodedKeywords&start=$current"
                 println("executing $url")
                 driver.get(url)
                 Thread.sleep(Random.nextLong(1000, 2000));

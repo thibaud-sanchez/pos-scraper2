@@ -14,7 +14,7 @@ class LocationGenerator {
         fun generateLocations(
             centerPoint: LatLng,
             surfaceMeters: Int,
-            distanceBetweenPointsMeters: Int = 2000
+            distanceBetweenPointsMeters: Int = 9000
         ): List<LatLng> {
 
             var coef = 0.0000089;

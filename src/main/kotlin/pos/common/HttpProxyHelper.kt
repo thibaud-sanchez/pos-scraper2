@@ -24,6 +24,16 @@ class HttpProxyHelper() {
         HttpHelper.ProxyParams("10.64.0.1", port, null, null),
         HttpHelper.ProxyParams("10.64.0.1", port, null, null),
         HttpHelper.ProxyParams("10.64.0.1", port, null, null),
+        HttpHelper.ProxyParams("10.64.0.1", port, null, null),
+        HttpHelper.ProxyParams("10.64.0.1", port, null, null),
+        HttpHelper.ProxyParams("10.64.0.1", port, null, null),
+        HttpHelper.ProxyParams("10.64.0.1", port, null, null),
+        HttpHelper.ProxyParams("10.64.0.1", port, null, null),
+        HttpHelper.ProxyParams("10.64.0.1", port, null, null),
+        HttpHelper.ProxyParams("10.64.0.1", port, null, null),
+        HttpHelper.ProxyParams("10.64.0.1", port, null, null),
+        HttpHelper.ProxyParams("10.64.0.1", port, null, null),
+        HttpHelper.ProxyParams("10.64.0.1", port, null, null),
 
         )
 }

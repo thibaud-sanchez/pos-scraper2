@@ -1,9 +1,6 @@
 package org.example
 
-import pos.LightspeedK
-import pos.SevenRooms
-import pos.StoreKit
-import pos.Zonal
+import pos.*
 
 //TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
@@ -131,6 +128,11 @@ fun main() {
   //  LightspeedK().resolveGoogleids()
     // BuildMapsList().start()
 
-     //  SevenRooms().resolveGoogleids()
-       StoreKit().resolveGoogleids()
+        //SevenRooms().start()
+      // ToastUK().start()
+     //ToastUK().buildCSV()
+      //Meandu().start()
+       //StoreKit().start()
+       //SevenRooms().buildCSV()
+StoreKit().buildCSV()
 }

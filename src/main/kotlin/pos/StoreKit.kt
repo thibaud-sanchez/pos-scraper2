@@ -7,13 +7,14 @@ import org.json.JSONArray
 import org.json.JSONObject
 import pos.common.HttpPos
 import pos.common.RestaurantHttpRequest
+import pos.common.ScraperUtils
 import resolver.*
 
 class StoreKit : HttpPos("storekit") {
     private val ahrefsDomains=listOf("order.storekit.com")
 
     val regex = listOf<RestaurantIdRegex>(
-        RestaurantIdRegex("order", """order\.storekit\.com\/(?<id>.*)(\/)""".toRegex())
+        RestaurantIdRegex("order", """order\.storekit\.com\/(?<id>[a-zA-Z0-9\-]*)""".toRegex())
     )
 
     val restaurantIdResolver = RestaurantIdResolver(basePath, database, regex)
@@ -34,51 +35,61 @@ class StoreKit : HttpPos("storekit") {
     }
 
     override fun convertRawDataToRestaurant(rawData: RestaurantDb): List<Restaurant> {
-        return getRestaurantFromJson(JSONObject(rawData.data), rawData.datetime)
+        val restaurantList = mutableListOf<Restaurant>()
+        val content = rawData.data
+
+        val json = JSONObject(content)
+        var restaurantJson = json.optJSONObject("venue") ?:  json.getJSONObject("brand").optJSONArray("venues").getJSONObject(0)
+
+        restaurantList.add(restaurantJson.toRestaurant(rawData))
+
+        return restaurantList
     }
 
-    private fun JSONObject.toRestaurant(datetime: String): Restaurant {
+    private fun JSONObject.toRestaurant(restaurantDb: RestaurantDb): Restaurant {
         val json = this
-        val location = json.optJSONObject("loc")
+        val address = json.optJSONObject("address")
 
         return Restaurant(
-            name = json.optString("tr_name"),
+            name = json.optString("name"),
             id = json.optString("id"),
-            datetime = datetime,
-            contactPhone = json.optString("phone"),
-            address1 = json.optString("address")?.replace("\r\n", " ") ?: "",
-            timezone = json.optString("timezone"),
-            latitude = location?.optString("lat") ?: "",
-            longitude = location?.optString("lng") ?: "",
-            country = json.optString("country_code"),
-            pos = "Zelty"
+            urlSource = restaurantDb.source,
+            datetime=restaurantDb.datetime,
+            timezone=json.optString("timezone"),
+            contactEmail = json.optString("email" ),
+            contactPhone = json.optString("phoneNumber" ),
+            address1 =  address.optString("buildingNumber")+ " "+ address.optString("street"),
+            town = address.optString("city"),
+            postcode = address.optString("postCode"),
+            state = address.optString("state"),
+            latitude = address.optString("lat"),
+            longitude = address.optString("lng"),
+            url = json.optString("url"),
+            country = address.optString("country"),
+            extra1 = json.optString("slug"),
+            extra2 = json.optString("posProvider"),
+            maps= json.optString("gmaps_link"),
+            pos = "StoreKit"
         )
+
     }
+
 
 
     override fun initRequestsQueue() {
         val restaurantIdentifiers = restaurantIdResolver.getResolvedRestaurantId()
-        restaurantIdentifiers.forEach {
-            when (it.type) {
+        restaurantIdentifiers.forEach { restaurantRequestQueue.add(generateOrderRequest(it.id)) }
 
-                "order" -> restaurantRequestQueue.add(generateZeltyOrderRequest(it.id))
-                "booking" -> restaurantRequestQueue.add(generateZeltyBookingRequest(it.id))
-            }
-        }
         println("Total id to extract = ${restaurantRequestQueue.size}")
     }
 
 
-    private fun generateZeltyOrderRequest(id: String): RestaurantHttpRequest {
-        val request = HttpGet("https://bo.zelty.fr/apis/order/1.0/getdb?zkey=$id")
+    private fun generateOrderRequest(id: String): RestaurantHttpRequest {
+        val request = HttpGet("https://order.storekit.com/api/venues/$id")
         return RestaurantHttpRequest(id, request, "id")
     }
 
-    private fun generateZeltyBookingRequest(id: String): RestaurantHttpRequest {
-        val request = HttpGet("https://bo.zelty.fr/apis/booking/1.0/getdb")
-        request.addHeader("Authorization", "Basic $id")
-        return RestaurantHttpRequest(id, request, "id")
-    }
+
 
 
     override fun determineResponseStatus(
@@ -88,41 +99,10 @@ class StoreKit : HttpPos("storekit") {
         headers: Array<Header>
     ): RestaurantStatus {
         val json = JSONObject(responseBody)
-        val errno = json.optInt("errno", -1)
-        if (errno == 0) {
+        if (json.optJSONObject("venue") !=null) {
             return RestaurantStatus.FOUND
         } else {
             return RestaurantStatus.UNAVAILABLE
         }
-    }
-
-
-    fun getRestaurantFromJson(json: JSONObject, datetime: String): List<Restaurant> {
-
-        val restaurantsList = mutableListOf<Restaurant>()
-        val urlSource = json.optString("source_url")
-        val url = json.optString("json_url")
-        var array: JSONArray? = json.optJSONArray("restaurants")
-        if (array == null && json.has("restaurant")) {
-            array = JSONArray().put(json.getJSONObject("restaurant"))
-        } else if( array==null) {
-            println("Unable to find restaurant for current json $url")
-            return emptyList()
-        }
-
-
-        val count = array!!.length()
-        for (i in 0 until count) {
-            try {
-                val json = array.getJSONObject(i)
-                json.put("source_url", urlSource)
-                json.put("json_url", url)
-                val restaurant = json.toRestaurant(datetime)
-                restaurantsList.add(restaurant)
-            } catch (e: Exception) {
-                println("Invalid restaurant :  ${json.toString()}")
-            }
-        }
-        return restaurantsList
     }
 }
